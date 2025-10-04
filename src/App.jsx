@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Edges, Text } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
@@ -12,21 +12,27 @@ function SolidCubeWithEdges({ cubeRef }) {
   const geometry = useMemo(() => new THREE.BoxGeometry(3, 3, 3), []);
   const edges = useMemo(() => new THREE.EdgesGeometry(geometry), [geometry]);
 
-  useEffect(() => {
-    let rotationY = 0;
+  const { camera } = useThree();
 
-    const handleScroll = (e) => {
-      rotationY += e.deltaY * 0.005;
-      gsap.to(cubeRef.current.rotation, {
-        y: rotationY,
-        duration: 1.5,
-        ease: "ease.in.out",
-      });
-    };
+useEffect(() => {
+  let rotationY = 0;
 
-    window.addEventListener("wheel", handleScroll, { passive: true });
-    return () => window.removeEventListener("wheel", handleScroll);
-  }, [cubeRef]);
+  const handleScroll = (e) => {
+    rotationY += e.deltaY * 0.002; // حساسیت
+    gsap.to(camera.position, {
+      x: Math.sin(rotationY) * 8, // شعاع چرخش (۸ مثاله)
+      z: Math.cos(rotationY) * 8,
+      duration: 1.2,
+      ease: "power3.out",
+      onUpdate: () => {
+        camera.lookAt(cubeRef.current.position); // همیشه به کیوب نگاه کنه
+      },
+    });
+  };
+
+  window.addEventListener("wheel", handleScroll, { passive: true });
+  return () => window.removeEventListener("wheel", handleScroll);
+}, [camera, cubeRef]);
 
   return (
     <group ref={cubeRef} position={[0, 1.5, 0]}>
